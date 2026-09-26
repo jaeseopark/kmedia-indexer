@@ -13,18 +13,43 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Middleware to authenticate ingest endpoint using Bearer token
+ * Middleware to authenticate ingest endpoint using:
+ * 1. Bearer token (API key or JWT)
+ * 2. Valid JWT cookie (for authenticated web users)
  */
-export function authenticateIngestWorker(req: Request, res: Response, next: NextFunction): void {
+export function authenticateIngestWorker(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  // First, check for Bearer token in Authorization header
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
 
-  if (!token || token !== INGEST_API_KEY) {
-    res.status(401).json({ error: 'Unauthorized: Invalid or missing bearer token' });
+  if (token) {
+    // Check if it's an API key
+    if (token === INGEST_API_KEY) {
+      next();
+      return;
+    }
+
+    // Check if it's a valid JWT
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { sub: string };
+      req.userId = decoded.sub;
+      next();
+      return;
+    } catch (err) {
+      // Not a valid JWT
+    }
+
+    res.status(401).json({ error: 'Unauthorized: Invalid bearer token' });
     return;
   }
 
-  next();
+  // Check for JWT cookie (for web form submissions)
+  if (req.userId) {
+    next();
+    return;
+  }
+
+  res.status(401).json({ error: 'Unauthorized: Missing or invalid credentials' });
 }
 
 /**
