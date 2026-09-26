@@ -111,7 +111,6 @@ function addEntry() {
   const entry = document.createElement("div");
   entry.className = "entry-input";
   entry.innerHTML = \`
-    <label>Entry \${entryCount}:</label>
     <div class="form-group">
       <label style="margin-bottom: 3px;">Title <span style="color: red;">*</span></label>
       <input type="text" class="entry-title" placeholder="Torrent title" required />
