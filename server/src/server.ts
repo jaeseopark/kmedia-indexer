@@ -4,8 +4,9 @@
 import 'dotenv/config.js';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
-import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, getDbStats, get24HourStats } from './db.js';
-import { authenticateIngestWorker } from './middleware/auth.js';
+import cookieParser from 'cookie-parser';
+import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get24HourStats } from './db.js';
+import { authenticateIngestWorker, validateJWTCookie, generateAuthToken, verifyAPIKey, type AuthenticatedRequest } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
 import type { SearchParams, Torrent } from './types.js';
 import { IngestPayloadSchema } from '../../shared/schemas.js';
@@ -21,6 +22,8 @@ const app: Express = express();
  */
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
+app.use(validateJWTCookie);
 
 /**
  * Initialize database on startup
@@ -30,7 +33,36 @@ initializeDatabase();
 /**
  * Index page - Health information
  */
-app.get('/', (_req: Request, res: Response) => {
+app.get('/', (req: AuthenticatedRequest, res: Response): void => {
+  // Check if user has valid JWT
+  if (!req.userId) {
+    // Show login form
+    res.type('text/html; charset=utf-8').send(
+      '<!DOCTYPE html>\n' +
+      '<html>\n' +
+      '<head>\n' +
+      '<title>App Health - Login</title>\n' +
+      '<style>\n' +
+      'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }\n' +
+      'form { display: flex; flex-direction: column; gap: 10px; }\n' +
+      'input { padding: 8px; font-size: 14px; }\n' +
+      'button { padding: 10px; font-size: 14px; background-color: #007acc; color: white; border: none; cursor: pointer; border-radius: 4px; }\n' +
+      'button:hover { background-color: #005a9e; }\n' +
+      '</style>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '<h1>App Health</h1>\n' +
+      '<p>Please enter your API key to view the health page:</p>\n' +
+      '<form method="POST" action="/login">\n' +
+      '<input type="password" name="apiKey" placeholder="API Key" required autofocus />\n' +
+      '<button type="submit">Login</button>\n' +
+      '</form>\n' +
+      '</body>\n' +
+      '</html>'
+    );
+    return;
+  }
+
   const stats = get24HourStats();
   
   let content = 'APP HEALTH\n\n';
@@ -50,9 +82,16 @@ app.get('/', (_req: Request, res: Response) => {
     '<html>\n' +
     '<head>\n' +
     '<title>App Health</title>\n' +
+    '<style>\n' +
+    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }\n' +
+    'a { color: #007acc; text-decoration: none; }\n' +
+    'a:hover { text-decoration: underline; }\n' +
+    '</style>\n' +
     '</head>\n' +
     '<body>\n' +
     '<pre>' + content + '</pre>\n' +
+    '<hr />\n' +
+    '<p><a href="/logout">Logout</a></p>\n' +
     '</body>\n' +
     '</html>'
   );
@@ -61,16 +100,61 @@ app.get('/', (_req: Request, res: Response) => {
 /**
  * Health check endpoint
  */
-app.get('/health', (_req: Request, res: Response) => {
-  const stats = getDbStats();
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    database: {
-      totalTorrents: stats.totalTorrents,
-      totalSize: stats.totalSize.toString()
-    }
+app.get('/health', (_req: Request, res: Response): void => {
+  res.json({ status: 'ok' });
+});
+
+/**
+ * Login endpoint - validate API key and return JWT cookie
+ */
+app.post('/login', express.urlencoded({ extended: false }), (req: Request, res: Response): void => {
+  const { apiKey } = req.body;
+
+  if (!apiKey || !verifyAPIKey(apiKey)) {
+    res.status(401).type('text/html; charset=utf-8').send(
+      '<!DOCTYPE html>\n' +
+      '<html>\n' +
+      '<head>\n' +
+      '<title>App Health - Login</title>\n' +
+      '<style>\n' +
+      'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }\n' +
+      'form { display: flex; flex-direction: column; gap: 10px; }\n' +
+      'input { padding: 8px; font-size: 14px; }\n' +
+      'button { padding: 10px; font-size: 14px; background-color: #007acc; color: white; border: none; cursor: pointer; border-radius: 4px; }\n' +
+      'button:hover { background-color: #005a9e; }\n' +
+      '.error { color: #d13438; margin-bottom: 10px; }\n' +
+      '</style>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '<h1>App Health</h1>\n' +
+      '<p class="error">Invalid API key. Please try again:</p>\n' +
+      '<form method="POST" action="/login">\n' +
+      '<input type="password" name="apiKey" placeholder="API Key" required autofocus />\n' +
+      '<button type="submit">Login</button>\n' +
+      '</form>\n' +
+      '</body>\n' +
+      '</html>'
+    );
+    return;
+  }
+
+  const token = generateAuthToken();
+  res.cookie('auth_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
+
+  res.redirect('/');
+});
+
+/**
+ * Logout endpoint
+ */
+app.get('/logout', (_req: Request, res: Response): void => {
+  res.clearCookie('auth_token');
+  res.redirect('/');
 });
 
 /**

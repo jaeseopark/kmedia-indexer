@@ -15,6 +15,7 @@ db.pragma('foreign_keys = ON');
  * Initialize database schema if not exists
  */
 export function initializeDatabase(): void {
+  // Create table with schema
   db.exec(`
     CREATE TABLE IF NOT EXISTS torrents (
       id TEXT PRIMARY KEY,
@@ -35,9 +36,13 @@ export function initializeDatabase(): void {
   `);
 
   // Migrate existing records: set updated_at to created_at if it's NULL
-  db.exec(`
-    UPDATE torrents SET updated_at = created_at WHERE updated_at IS NULL;
-  `);
+  // Wrapped in try-catch in case column doesn't exist in old schema
+  try {
+    db.exec(`UPDATE torrents SET updated_at = created_at WHERE updated_at IS NULL;`);
+  } catch (err) {
+    // Column might not exist in old database schema - this is okay
+    console.warn('Migration note: Could not update updated_at column');
+  }
 }
 
 /**
