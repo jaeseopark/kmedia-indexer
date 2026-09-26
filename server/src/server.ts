@@ -4,7 +4,7 @@
 import 'dotenv/config.js';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
-import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, getDbStats } from './db.js';
+import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, getDbStats, get24HourStats } from './db.js';
 import { authenticateIngestWorker } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
 import type { SearchParams, Torrent } from './types.js';
@@ -26,6 +26,37 @@ app.use(express.json({ limit: '10mb' }));
  * Initialize database on startup
  */
 initializeDatabase();
+
+/**
+ * Index page - Health information
+ */
+app.get('/', (_req: Request, res: Response) => {
+  const stats = get24HourStats();
+  
+  let content = 'APP HEALTH\n\n';
+  content += 'Records in last 24 hours: ' + stats.count + '\n';
+  
+  if (stats.count === 0) {
+    content += 'No records in the last 24 hours\n';
+  } else {
+    content += '\nLatest titles:\n';
+    stats.titles.forEach((title, index) => {
+      content += (index + 1) + '. ' + title + '\n';
+    });
+  }
+
+  res.type('text/html; charset=utf-8').send(
+    '<!DOCTYPE html>\n' +
+    '<html>\n' +
+    '<head>\n' +
+    '<title>App Health</title>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<pre>' + content + '</pre>\n' +
+    '</body>\n' +
+    '</html>'
+  );
+});
 
 /**
  * Health check endpoint

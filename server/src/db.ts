@@ -25,11 +25,18 @@ export function initializeDatabase(): void {
       seeders INTEGER DEFAULT 0,
       leechers INTEGER DEFAULT 0,
       published_at TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE INDEX IF NOT EXISTS idx_torrents_title ON torrents(title);
     CREATE INDEX IF NOT EXISTS idx_torrents_created_at ON torrents(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_torrents_updated_at ON torrents(updated_at DESC);
+  `);
+
+  // Migrate existing records: set updated_at to created_at if it's NULL
+  db.exec(`
+    UPDATE torrents SET updated_at = created_at WHERE updated_at IS NULL;
   `);
 }
 
@@ -60,8 +67,8 @@ function prepareStatements(): void {
   `);
 
   upsertTorrent = db.prepare(`
-    INSERT INTO torrents (id, category, title, magnet_url, size_bytes, seeders, leechers, published_at)
-    VALUES (@id, @category, @title, @magnet_url, @size_bytes, @seeders, @leechers, @published_at)
+    INSERT INTO torrents (id, category, title, magnet_url, size_bytes, seeders, leechers, published_at, updated_at)
+    VALUES (@id, @category, @title, @magnet_url, @size_bytes, @seeders, @leechers, @published_at, CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET
       category=excluded.category,
       title=excluded.title,
@@ -69,7 +76,8 @@ function prepareStatements(): void {
       size_bytes=excluded.size_bytes,
       seeders=excluded.seeders,
       leechers=excluded.leechers,
-      published_at=excluded.published_at
+      published_at=excluded.published_at,
+      updated_at=CURRENT_TIMESTAMP
   `);
 }
 
@@ -128,6 +136,30 @@ export function getDbStats(): { totalTorrents: number; totalSize: bigint } {
   return {
     totalTorrents: stats.count || 0,
     totalSize: stats.total_size || 0n
+  };
+}
+
+/**
+ * Get statistics for the last 24 hours (newly ingested or updated)
+ */
+export function get24HourStats(): { count: number; titles: string[] } {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  const countResult = db.prepare(`
+    SELECT COUNT(*) as count FROM torrents 
+    WHERE updated_at >= ?
+  `).get(oneDayAgo) as any;
+
+  const titlesResult = db.prepare(`
+    SELECT DISTINCT title FROM torrents 
+    WHERE updated_at >= ?
+    ORDER BY updated_at DESC
+    LIMIT 2
+  `).all(oneDayAgo) as Array<{ title: string }>;
+
+  return {
+    count: countResult.count || 0,
+    titles: titlesResult.map(row => row.title)
   };
 }
 
