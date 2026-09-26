@@ -1,1 +1,10 @@
 tmp/
+node_modules/
+dist/
+indexer.db
+.env
+.DS_Store
+*.log
+.vscode/
+.idea/
+coverage/
