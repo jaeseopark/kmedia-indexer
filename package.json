@@ -1,0 +1,29 @@
+{
+  "name": "kmedia-indexer",
+  "version": "0.1.0",
+  "description": "Torznab indexer server with autonomous remote scraper",
+  "private": true,
+  "workspaces": [
+    "server",
+    "scraper",
+    "shared"
+  ],
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "scripts": {
+    "dev": "cd server && npm run dev",
+    "build": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "test": "cd server && npm run test",
+    "docker:build": "docker build -f Dockerfile-server -t kmedia-indexer-server:latest .",
+    "docker:run": "docker-compose -f docker-compose-server.yml up",
+    "update-deps": "npm update --depth=3"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.0"
+  }
+}

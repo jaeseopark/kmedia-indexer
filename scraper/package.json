@@ -1,0 +1,14 @@
+{
+  "name": "@kmedia-indexer/scraper",
+  "version": "0.1.0",
+  "description": "Remote scraper for kmedia-indexer",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "scripts": {
+    "dev": "echo 'Scraper implementation coming soon'",
+    "build": "echo 'Scraper implementation coming soon'"
+  }
+}
