@@ -101,16 +101,28 @@ export function getTorrentById(id: string): Torrent | undefined {
 
 /**
  * Ingest torrents with transaction support
+ * Returns count, created, and updated statistics
+ * @param entries Array of torrent entries to ingest
+ * @returns Object with total count, created count, and updated count
  */
-export function ingestTorrents(entries: IngestEntry[]): number {
+export function ingestTorrents(entries: IngestEntry[]): { count: number; created: number; updated: number } {
   if (!upsertTorrent) prepareStatements();
+  if (!selectTorrentById) prepareStatements();
   
   const insertTransaction = db.transaction((items: IngestEntry[]) => {
-    let ingestedCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
+    
     for (const item of items) {
       if (item.magnet_url && item.title) {
+        const id = item.id || item.magnet_url;
+        
+        // Check if record already exists
+        const existingRecord = selectTorrentById.get(id) as Torrent | undefined;
+        const isUpdate = !!existingRecord;
+        
         upsertTorrent.run({
-          id: item.id || item.magnet_url,
+          id,
           category: item.category || '2000',
           title: item.title,
           magnet_url: item.magnet_url,
@@ -119,10 +131,16 @@ export function ingestTorrents(entries: IngestEntry[]): number {
           leechers: item.leechers || 0,
           published_at: item.published_at || new Date().toISOString()
         });
-        ingestedCount++;
+        
+        if (isUpdate) {
+          updatedCount++;
+        } else {
+          createdCount++;
+        }
       }
     }
-    return ingestedCount;
+    
+    return { count: createdCount + updatedCount, created: createdCount, updated: updatedCount };
   });
 
   return insertTransaction(entries);
