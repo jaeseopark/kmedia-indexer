@@ -9,6 +9,8 @@ import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get
 import { authenticateIngestWorker, validateJWTCookie, generateAuthToken, verifyAPIKey, type AuthenticatedRequest } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
 import { initializeDailyReportScheduler, cancelDailyReportScheduler } from './utils/dailyReport.js';
+import { renderLoginForm } from './templates/auth.js';
+import { renderIndexPage } from './templates/index.js';
 import type { SearchParams, Torrent } from './types.js';
 import { IngestPayloadSchema } from '../../shared/schemas.js';
 
@@ -37,70 +39,17 @@ initializeDatabase();
 initializeDailyReportScheduler();
 
 /**
- * Index page - Health information
+ * Index page - Health information and ingest form
  */
 app.get('/', (req: AuthenticatedRequest, res: Response): void => {
   // Check if user has valid JWT
   if (!req.userId) {
-    // Show login form
-    res.type('text/html; charset=utf-8').send(
-      '<!DOCTYPE html>\n' +
-      '<html>\n' +
-      '<head>\n' +
-      '<title>App Health - Login</title>\n' +
-      '<style>\n' +
-      'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }\n' +
-      'form { display: flex; flex-direction: column; gap: 10px; }\n' +
-      'input { padding: 8px; font-size: 14px; }\n' +
-      'button { padding: 10px; font-size: 14px; background-color: #007acc; color: white; border: none; cursor: pointer; border-radius: 4px; }\n' +
-      'button:hover { background-color: #005a9e; }\n' +
-      '</style>\n' +
-      '</head>\n' +
-      '<body>\n' +
-      '<h1>App Health</h1>\n' +
-      '<p>Please enter your API key to view the health page:</p>\n' +
-      '<form method="POST" action="/login">\n' +
-      '<input type="password" name="apiKey" placeholder="API Key" required autofocus />\n' +
-      '<button type="submit">Login</button>\n' +
-      '</form>\n' +
-      '</body>\n' +
-      '</html>'
-    );
+    res.type('text/html; charset=utf-8').send(renderLoginForm());
     return;
   }
 
   const stats = get24HourStats();
-  
-  let content = 'APP HEALTH\n\n';
-  content += 'Records in last 24 hours: ' + stats.count + '\n';
-  
-  if (stats.count === 0) {
-    content += 'No records in the last 24 hours\n';
-  } else {
-    content += '\nLatest titles:\n';
-    stats.titles.forEach((title, index) => {
-      content += (index + 1) + '. ' + title + '\n';
-    });
-  }
-
-  res.type('text/html; charset=utf-8').send(
-    '<!DOCTYPE html>\n' +
-    '<html>\n' +
-    '<head>\n' +
-    '<title>App Health</title>\n' +
-    '<style>\n' +
-    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }\n' +
-    'a { color: #007acc; text-decoration: none; }\n' +
-    'a:hover { text-decoration: underline; }\n' +
-    '</style>\n' +
-    '</head>\n' +
-    '<body>\n' +
-    '<pre>' + content + '</pre>\n' +
-    '<hr />\n' +
-    '<p><a href="/logout">Logout</a></p>\n' +
-    '</body>\n' +
-    '</html>'
-  );
+  res.type('text/html; charset=utf-8').send(renderIndexPage({ stats }));
 });
 
 /**
@@ -117,30 +66,7 @@ app.post('/login', express.urlencoded({ extended: false }), (req: Request, res: 
   const { apiKey } = req.body;
 
   if (!apiKey || !verifyAPIKey(apiKey)) {
-    res.status(401).type('text/html; charset=utf-8').send(
-      '<!DOCTYPE html>\n' +
-      '<html>\n' +
-      '<head>\n' +
-      '<title>App Health - Login</title>\n' +
-      '<style>\n' +
-      'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }\n' +
-      'form { display: flex; flex-direction: column; gap: 10px; }\n' +
-      'input { padding: 8px; font-size: 14px; }\n' +
-      'button { padding: 10px; font-size: 14px; background-color: #007acc; color: white; border: none; cursor: pointer; border-radius: 4px; }\n' +
-      'button:hover { background-color: #005a9e; }\n' +
-      '.error { color: #d13438; margin-bottom: 10px; }\n' +
-      '</style>\n' +
-      '</head>\n' +
-      '<body>\n' +
-      '<h1>App Health</h1>\n' +
-      '<p class="error">Invalid API key. Please try again:</p>\n' +
-      '<form method="POST" action="/login">\n' +
-      '<input type="password" name="apiKey" placeholder="API Key" required autofocus />\n' +
-      '<button type="submit">Login</button>\n' +
-      '</form>\n' +
-      '</body>\n' +
-      '</html>'
-    );
+    res.status(401).type('text/html; charset=utf-8').send(renderLoginForm({ hasError: true }));
     return;
   }
 
@@ -279,9 +205,10 @@ app.use((_req: Request, res: Response) => {
  */
 const server = app.listen(PORT, () => {
   console.log(`[${NODE_ENV}] Indexer listening on http://localhost:${PORT}`);
+  console.log(`  GET  /                         - Health page & ingest form (requires login)`);
   console.log(`  GET  /api?t=caps               - Torznab capabilities`);
   console.log(`  GET  /api?t=search&q=<query>   - Torznab search`);
-  console.log(`  POST /api/v1/ingest            - Worker ingest (requires Bearer auth)`);
+  console.log(`  POST /api/v1/ingest            - Ingest records (requires Bearer API key or valid JWT)`);
   console.log(`  GET  /health                   - Health check`);
 });
 
