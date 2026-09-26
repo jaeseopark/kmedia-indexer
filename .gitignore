@@ -34,9 +34,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # Database
-indexer.db
-indexer.db-shm
-indexer.db-wal
+indexer.sqlite
+indexer.sqlite-shm
+indexer.sqlite-wal
 
 # Temporary
 tmp/

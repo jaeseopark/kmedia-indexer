@@ -9,7 +9,6 @@ COPY tsconfig.json ./
 # Copy workspace packages
 COPY server ./server
 COPY shared ./shared
-COPY scraper ./scraper
 
 # Install dependencies and build server
 RUN npm install --legacy-peer-deps && cd server && npm run build

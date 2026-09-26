@@ -15,7 +15,7 @@ import type { SearchParams, Torrent } from './types.js';
 import { IngestPayloadSchema } from '../../shared/schemas.js';
 
 const PORT = process.env.PORT || 3000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env.NODE_ENV || 'production';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 const app: Express = express();
