@@ -16,7 +16,8 @@ export const TorrentSchema = z.object({
   seeders: z.number().int().nonnegative().default(0),
   leechers: z.number().int().nonnegative().default(0),
   published_at: z.string().datetime().optional(),
-  created_at: z.string().datetime().optional()
+  created_at: z.string().datetime().optional(),
+  updated_at: z.string().datetime().optional()
 });
 
 export type Torrent = z.infer<typeof TorrentSchema>;
@@ -48,11 +49,16 @@ export type IngestPayload = z.infer<typeof IngestPayloadSchema>;
 
 /**
  * IngestResponse schema - response from ingest endpoint
+ * count: total records processed
+ * created: number of new records inserted
+ * updated: number of existing records updated
  */
 export const IngestResponseSchema = z.object({
   success: z.boolean(),
-  count: z.number().int().nonnegative()
-});
+  count: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative().optional(),
+  updated: z.number().int().nonnegative().optional()
+}).passthrough();
 
 export type IngestResponse = z.infer<typeof IngestResponseSchema>;
 

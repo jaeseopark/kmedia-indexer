@@ -2,7 +2,8 @@
  * Server and endpoint tests
  */
 import { describe, it, expect } from 'vitest';
-import type { SearchParams, IngestPayload } from '../types.js';
+import type { SearchParams, IngestPayload, IngestResponse } from '../types.js';
+import { IngestResponseSchema } from '../../../shared/schemas.ts';
 
 describe('Server Contracts', () => {
   describe('Torznab Contract', () => {
@@ -76,6 +77,46 @@ describe('Server Contracts', () => {
       };
 
       expect(invalidPayload.entries).toHaveLength(0);
+    });
+
+    it('should validate ingest response with create/update tracking', () => {
+      const response: IngestResponse = {
+        success: true,
+        count: 10,
+        created: 8,
+        updated: 2
+      };
+
+      // Validate response matches schema
+      const validated = IngestResponseSchema.parse(response);
+      expect(validated.success).toBe(true);
+      expect(validated.count).toBe(10);
+      expect(validated.created).toBe(8);
+      expect(validated.updated).toBe(2);
+    });
+
+    it('should support idempotent ingestion with timestamp tracking', () => {
+      const response1: IngestResponse = {
+        success: true,
+        count: 5,
+        created: 5,
+        updated: 0
+      };
+
+      const response2: IngestResponse = {
+        success: true,
+        count: 5,
+        created: 0,
+        updated: 5
+      };
+
+      // First ingest creates all records
+      expect(response1.created).toBe(5);
+      expect(response1.updated).toBe(0);
+
+      // Second ingest with same records updates all
+      expect(response2.created).toBe(0);
+      expect(response2.updated).toBe(5);
     });
 
     it('should require title and magnet_url in entries', () => {

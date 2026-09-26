@@ -165,8 +165,8 @@ app.post('/api/v1/ingest', authenticateIngestWorker, (req: Request, res: Respons
     const validatedPayload = IngestPayloadSchema.parse(req.body);
     const { entries } = validatedPayload;
 
-    const ingestedCount = ingestTorrents(entries);
-    return res.json({ success: true, count: ingestedCount });
+    const result = ingestTorrents(entries);
+    return res.json({ success: true, count: result.count, created: result.created, updated: result.updated });
   } catch (err: any) {
     if (err.name === 'ZodError') {
       console.warn('Ingest validation error:', err.errors);
