@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get24HourStats } from './db.js';
 import { authenticateIngestWorker, validateJWTCookie, generateAuthToken, verifyAPIKey, type AuthenticatedRequest } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
+import { initializeDailyReportScheduler, cancelDailyReportScheduler } from './utils/dailyReport.js';
 import type { SearchParams, Torrent } from './types.js';
 import { IngestPayloadSchema } from '../../shared/schemas.js';
 
@@ -29,6 +30,11 @@ app.use(validateJWTCookie);
  * Initialize database on startup
  */
 initializeDatabase();
+
+/**
+ * Initialize daily report scheduler
+ */
+initializeDailyReportScheduler();
 
 /**
  * Index page - Health information
@@ -284,6 +290,7 @@ const server = app.listen(PORT, () => {
  */
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  cancelDailyReportScheduler();
   server.close(() => {
     console.log('Server closed');
     process.exit(0);
