@@ -11,9 +11,8 @@ services:
       - NODE_ENV=development
       - INGEST_API_KEY=${INGEST_API_KEY}
       - JWT_SECRET=${JWT_SECRET}
-      - DB_PATH=/data/indexer.sqlite
     volumes:
-      - indexer-data:/data
+      - mnt/data:/data
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
