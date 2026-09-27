@@ -4,7 +4,7 @@
 import Database from 'better-sqlite3';
 import type { Torrent, IngestEntry } from './types.js';
 
-const DB_PATH = process.env.DB_PATH || 'indexer.db';
+const DB_PATH = process.env.DB_PATH || '/data/indexer.sqlite';
 
 const db: Database.Database = new Database(DB_PATH);
 

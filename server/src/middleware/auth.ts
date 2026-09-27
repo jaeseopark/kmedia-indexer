@@ -1,11 +1,19 @@
 /**
- * Authentication middleware for ingest endpoint (scraper workers) and health page
+ * Authentication middleware for ingest endpoint (scraper workers) and admin page
  */
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const INGEST_API_KEY = process.env.INGEST_API_KEY || 'super-secret-worker-key';
-const JWT_SECRET = process.env.JWT_SECRET || 'health-page-secret-key';
+const INGEST_API_KEY: string = process.env.INGEST_API_KEY || '';
+const JWT_SECRET: string = process.env.JWT_SECRET || '';
+
+if (!INGEST_API_KEY) {
+  throw new Error('INGEST_API_KEY environment variable is required');
+}
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 const JWT_EXPIRY = '7d';
 
 export interface AuthenticatedRequest extends Request {

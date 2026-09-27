@@ -13,7 +13,7 @@ export function renderLoginForm({ hasError = false }: LoginFormOptions = {}): st
   return `<!DOCTYPE html>
 <html>
 <head>
-<title>App Health - Login</title>
+<title>Admin Page - Login</title>
 <style>
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
 form { display: flex; flex-direction: column; gap: 10px; }
@@ -24,8 +24,8 @@ button:hover { background-color: #005a9e; }
 </style>
 </head>
 <body>
-<h1>App Health</h1>
-${hasError ? '<p class="error">Invalid API key. Please try again:</p>' : '<p>Please enter your API key to view the health page:</p>'}
+<h1>Admin Page</h1>
+${hasError ? '<p class="error">Invalid API key. Please try again:</p>' : '<p>Please enter your API key to view the admin page:</p>'}
 <form method="POST" action="/login">
 <input type="password" name="apiKey" placeholder="API Key" required autofocus />
 <button type="submit">Login</button>

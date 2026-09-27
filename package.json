@@ -2,6 +2,7 @@
   "name": "kmedia-indexer",
   "version": "0.1.0",
   "description": "Torznab indexer server with autonomous remote scraper",
+  "type": "module",
   "private": true,
   "workspaces": [
     "server",
