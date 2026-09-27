@@ -205,7 +205,7 @@ app.use((_req: Request, res: Response) => {
  */
 const server = app.listen(PORT, () => {
   console.log(`[${NODE_ENV}] Indexer listening on http://localhost:${PORT}`);
-  console.log(`  GET  /                         - Health page & ingest form (requires login)`);
+  console.log(`  GET  /                         - Admin page (requires login)`);
   console.log(`  GET  /api?t=caps               - Torznab capabilities`);
   console.log(`  GET  /api?t=search&q=<query>   - Torznab search`);
   console.log(`  POST /api/v1/ingest            - Ingest records (requires Bearer API key or valid JWT)`);

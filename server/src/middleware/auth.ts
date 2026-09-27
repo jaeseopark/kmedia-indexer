@@ -1,5 +1,5 @@
 /**
- * Authentication middleware for ingest endpoint (scraper workers) and health page
+ * Authentication middleware for ingest endpoint (scraper workers) and admin page
  */
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
