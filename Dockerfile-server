@@ -33,12 +33,7 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
     chown -R nodejs:nodejs /app
 
-# Create entrypoint script to fix data directory permissions and run as nodejs
-RUN printf '#!/bin/sh\nmkdir -p /data\nchmod 777 /data\nsu-exec nodejs node server/dist/server/src/server.js' > /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh && \
-    apk add --no-cache su-exec
-
-# Don't switch to USER nodejs yet, let entrypoint handle it
+USER nodejs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
@@ -46,4 +41,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "server/dist/server/src/server.js"]
