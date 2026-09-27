@@ -25,7 +25,7 @@ export function renderIndexPage({ stats }: IndexPageOptions): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-<title>App Health</title>
+<title>Admin Page</title>
 <style>
 ${getBaseStyles()}
 </style>
@@ -34,7 +34,7 @@ ${getIngestFormScript()}
 </script>
 </head>
 <body>
-<h1>App Health</h1>
+<h1>Admin Page</h1>
 <pre>${healthContent}</pre>
 <h2>Ingest Record</h2>
 <div id="ingest-message"></div>
@@ -49,7 +49,7 @@ ${ingestForm}
  * Compose health stats text content
  */
 function composeHealthContent({ stats }: HealthContentOptions): string {
-  let content = 'APP HEALTH\n\n';
+  let content = 'ADMIN PAGE\n\n';
   content += 'Records in last 24 hours: ' + stats.count + '\n';
   
   if (stats.count === 0) {
