@@ -9,10 +9,10 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=development
-      - INGEST_API_KEY=${INGEST_API_KEY}
-      - JWT_SECRET=${JWT_SECRET}
+      - INGEST_API_KEY=${INGEST_API_KEY:-test-key}
+      - JWT_SECRET=${JWT_SECRET:-test-secret}
     volumes:
-      - mnt/data:/data
+      - ./mnt/data:/data
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s

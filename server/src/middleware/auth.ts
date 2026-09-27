@@ -4,8 +4,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const INGEST_API_KEY = process.env.INGEST_API_KEY;
-const JWT_SECRET = process.env.JWT_SECRET;
+const INGEST_API_KEY: string = process.env.INGEST_API_KEY || '';
+const JWT_SECRET: string = process.env.JWT_SECRET || '';
 
 if (!INGEST_API_KEY) {
   throw new Error('INGEST_API_KEY environment variable is required');
