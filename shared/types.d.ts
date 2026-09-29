@@ -12,6 +12,7 @@ export interface Torrent {
     leechers: number;
     published_at: string;
     created_at?: string;
+    updated_at?: string;
 }
 export interface IngestEntry {
     id?: string;
@@ -29,6 +30,8 @@ export interface IngestPayload {
 export interface IngestResponse {
     success: boolean;
     count: number;
+    created?: number;
+    updated?: number;
 }
 export interface SearchParams {
     t?: string;
