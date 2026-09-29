@@ -1,7 +1,9 @@
 import "dotenv/config";
 import axios from "axios";
 import { SCRAPE_TARGETS } from "./config/targets.js";
-import { scrapeTarget } from "./scrapers/tfreeca.js";
+import { scrapeTarget as scrapeTfreeca } from "./scrapers/tfreeca.js";
+import { scrapeTarget as scrapeTorrenttip } from "./scrapers/torrenttip.js";
+import type { ScrapeTarget } from "./types/scraper.js";
 import type { IngestEntry } from "../../shared/types.js";
 
 /**
@@ -79,6 +81,24 @@ async function postToServer(entries: IngestEntry[]): Promise<any> {
 }
 
 /**
+ * Dispatches scraping to the appropriate provider
+ * 
+ * @param target - The scraping target configuration
+ * @param userAgent - Optional user agent for requests
+ * @returns Array of ingested entries
+ */
+async function scrapeByProvider(target: ScrapeTarget, userAgent?: string): Promise<IngestEntry[]> {
+  switch (target.provider) {
+    case "tfreeca":
+      return scrapeTfreeca(target, userAgent);
+    case "torrenttip":
+      return scrapeTorrenttip(target);
+    default:
+      throw new Error(`Unknown provider: ${target.provider}`);
+  }
+}
+
+/**
  * Main scraper orchestrator
  * Iterates through all targets, scrapes them, and posts results to server
  */
@@ -100,8 +120,8 @@ async function runScraper(): Promise<void> {
     console.log(`${"=".repeat(60)}`);
 
     try {
-      // Scrape the target
-      const entries = await scrapeTarget(target, SCRAPER_USER_AGENT);
+      // Scrape the target using appropriate provider
+      const entries = await scrapeByProvider(target, SCRAPER_USER_AGENT);
       totalEntries += entries.length;
 
       if (entries.length > 0) {
