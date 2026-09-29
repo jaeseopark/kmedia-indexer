@@ -15,7 +15,8 @@ export const TorrentSchema = z.object({
     seeders: z.number().int().nonnegative().default(0),
     leechers: z.number().int().nonnegative().default(0),
     published_at: z.string().datetime().optional(),
-    created_at: z.string().datetime().optional()
+    created_at: z.string().datetime().optional(),
+    updated_at: z.string().datetime().optional()
 });
 /**
  * IngestEntry schema - single entry in ingest payload
@@ -38,11 +39,16 @@ export const IngestPayloadSchema = z.object({
 });
 /**
  * IngestResponse schema - response from ingest endpoint
+ * count: total records processed
+ * created: number of new records inserted
+ * updated: number of existing records updated
  */
 export const IngestResponseSchema = z.object({
     success: z.boolean(),
-    count: z.number().int().nonnegative()
-});
+    count: z.number().int().nonnegative(),
+    created: z.number().int().nonnegative().optional(),
+    updated: z.number().int().nonnegative().optional()
+}).passthrough();
 /**
  * SearchParams schema - query parameters for search endpoint
  */

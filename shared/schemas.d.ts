@@ -16,6 +16,7 @@ export declare const TorrentSchema: z.ZodObject<{
     leechers: z.ZodDefault<z.ZodNumber>;
     published_at: z.ZodOptional<z.ZodString>;
     created_at: z.ZodOptional<z.ZodString>;
+    updated_at: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export type Torrent = z.infer<typeof TorrentSchema>;
 /**
@@ -50,11 +51,16 @@ export declare const IngestPayloadSchema: z.ZodObject<{
 export type IngestPayload = z.infer<typeof IngestPayloadSchema>;
 /**
  * IngestResponse schema - response from ingest endpoint
+ * count: total records processed
+ * created: number of new records inserted
+ * updated: number of existing records updated
  */
 export declare const IngestResponseSchema: z.ZodObject<{
     success: z.ZodBoolean;
     count: z.ZodNumber;
-}, z.core.$strip>;
+    created: z.ZodOptional<z.ZodNumber>;
+    updated: z.ZodOptional<z.ZodNumber>;
+}, z.core.$loose>;
 export type IngestResponse = z.infer<typeof IngestResponseSchema>;
 /**
  * SearchParams schema - query parameters for search endpoint
