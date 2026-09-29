@@ -12,10 +12,10 @@ const db: Database.Database = new Database(DB_PATH);
 db.pragma('foreign_keys = ON');
 
 /**
- * Initialize database schema if not exists
+ * Database initialization and schema if not exists
  */
 export function initializeDatabase(): void {
-  // Create table with schema
+  // Create tables with schema
   db.exec(`
     CREATE TABLE IF NOT EXISTS torrents (
       id TEXT PRIMARY KEY,
@@ -30,9 +30,20 @@ export function initializeDatabase(): void {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS magnet_providers (
+      id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL UNIQUE,
+      base_url TEXT NOT NULL,
+      description TEXT,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_torrents_title ON torrents(title);
     CREATE INDEX IF NOT EXISTS idx_torrents_created_at ON torrents(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_torrents_updated_at ON torrents(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_providers_active ON magnet_providers(active DESC);
   `);
 
   // Migrate existing records: set updated_at to created_at if it's NULL
@@ -42,6 +53,86 @@ export function initializeDatabase(): void {
   } catch (err) {
     // Column might not exist in old database schema - this is okay
     console.warn('Migration note: Could not update updated_at column');
+  }
+
+  // Initialize default providers (only after tables are created)
+  initializeDefaultProviders();
+}
+
+/**
+ * Provider management functions (must be before initializeDefaultProviders call)
+ */
+
+export interface MagnetProvider {
+  id: string;
+  provider: string;
+  base_url: string;
+  description?: string;
+  active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getAllProviders(): MagnetProvider[] {
+  const stmt = db.prepare(`
+    SELECT * FROM magnet_providers 
+    WHERE active = 1
+    ORDER BY provider ASC
+  `);
+  return stmt.all() as MagnetProvider[];
+}
+
+export function getProvider(provider: string): MagnetProvider | undefined {
+  const stmt = db.prepare(`
+    SELECT * FROM magnet_providers 
+    WHERE provider = ? AND active = 1
+  `);
+  return stmt.get(provider) as MagnetProvider | undefined;
+}
+
+export function upsertProvider(
+  provider: string,
+  baseUrl: string,
+  description?: string
+): MagnetProvider {
+  const id = `provider-${provider}-${Date.now()}`;
+  
+  const stmt = db.prepare(`
+    INSERT INTO magnet_providers (id, provider, base_url, description, active, updated_at)
+    VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+    ON CONFLICT(provider) DO UPDATE SET
+      base_url = excluded.base_url,
+      description = COALESCE(excluded.description, description),
+      updated_at = CURRENT_TIMESTAMP
+    RETURNING *
+  `);
+
+  return stmt.get(id, provider, baseUrl, description) as MagnetProvider;
+}
+
+export function deactivateProvider(provider: string): boolean {
+  const stmt = db.prepare(`
+    UPDATE magnet_providers SET active = 0, updated_at = CURRENT_TIMESTAMP
+    WHERE provider = ?
+  `);
+  const result = stmt.run(provider);
+  return result.changes > 0;
+}
+
+/**
+ * Initialize default providers if not exist
+ */
+function initializeDefaultProviders(): void {
+  const existing = db.prepare('SELECT COUNT(*) as count FROM magnet_providers').get() as any;
+  
+  if (existing.count === 0) {
+    try {
+      upsertProvider('tfreeca', 'https://www.tfreeca22.top', 'Korean torrent site (tfreeca)');
+      upsertProvider('torrenttip', 'https://torrenttip246.top', 'Korean torrent site (TorrentTip)');
+      console.log('[DB] Default providers initialized');
+    } catch (err) {
+      console.warn('[DB] Could not initialize default providers:', (err as any).message);
+    }
   }
 }
 

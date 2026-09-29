@@ -1,7 +1,10 @@
 import "dotenv/config";
 import axios from "axios";
 import { SCRAPE_TARGETS } from "./config/targets.js";
-import { scrapeTarget } from "./scrapers/tfreeca.js";
+import { scrapeTarget as scrapeTfreeca } from "./scrapers/tfreeca.js";
+import { scrapeTarget as scrapeTorrenttip } from "./scrapers/torrenttip.js";
+import { fetchProviderConfigs, getProviderConfig } from "./utils/providerConfig.js";
+import type { ScrapeTarget } from "./types/scraper.js";
 import type { IngestEntry } from "../../shared/types.js";
 
 /**
@@ -79,20 +82,92 @@ async function postToServer(entries: IngestEntry[]): Promise<any> {
 }
 
 /**
+ * Dispatches scraping to the appropriate provider
+ * 
+ * @param target - The scraping target configuration
+ * @param userAgent - Optional user agent for requests
+ * @returns Array of ingested entries
+ */
+async function scrapeByProvider(target: ScrapeTarget, userAgent?: string): Promise<IngestEntry[]> {
+  switch (target.provider) {
+    case "tfreeca":
+      return scrapeTfreeca(target, userAgent);
+    case "torrenttip":
+      return scrapeTorrenttip(target);
+    default:
+      throw new Error(`Unknown provider: ${target.provider}`);
+  }
+}
+
+/**
+ * Apply provider configurations to targets
+ * Replaces base URL in target.url with the current provider URL from config
+ * 
+ * @param targets - Original targets with hardcoded URLs
+ * @returns Targets with updated URLs from provider config
+ */
+function applyProviderConfigs(targets: ScrapeTarget[]): ScrapeTarget[] {
+  return targets.map(target => {
+    const config = getProviderConfig(target.provider);
+    
+    if (!config) {
+      console.warn(`[Config] No provider config for '${target.provider}', using default URL`);
+      return target;
+    }
+
+    // Replace the base URL in the target URL
+    // Target URL format: {baseUrl}/path/to/resource
+    // Extract the path from the original URL and combine with new baseUrl
+    const originalUrl = target.url;
+    let newUrl = originalUrl;
+
+    // Try to extract the path from the original URL
+    try {
+      const urlObj = new URL(originalUrl);
+      newUrl = `${config.base_url}${urlObj.pathname}${urlObj.search}`;
+      
+      if (newUrl !== originalUrl) {
+        console.log(`[Config] Updated ${target.name}: ${config.base_url}`);
+      }
+    } catch (err) {
+      // If URL parsing fails, just use the provider's base URL + original path
+      console.warn(`[Config] Could not parse URL for ${target.name}, using provider base URL`);
+      newUrl = config.base_url;
+    }
+
+    return {
+      ...target,
+      url: newUrl
+    };
+  });
+}
+
+/**
  * Main scraper orchestrator
  * Iterates through all targets, scrapes them, and posts results to server
  */
 async function runScraper(): Promise<void> {
   console.log("🚀 Starting kmedia-indexer scraper");
   console.log(`📍 Server: ${SERVER_URL}`);
-  console.log(`🎯 Targets: ${SCRAPE_TARGETS.length}\n`);
+
+  // Fetch provider configurations from server
+  try {
+    await fetchProviderConfigs(SERVER_URL);
+  } catch (err) {
+    console.warn(`⚠️  Could not fetch provider configs, using defaults`);
+  }
+
+  // Apply provider configs to targets (update URLs if needed)
+  const targetsWithConfigs = applyProviderConfigs(SCRAPE_TARGETS);
+  
+  console.log(`🎯 Targets: ${targetsWithConfigs.length}\n`);
 
   let totalEntries = 0;
   let successfulTargets = 0;
   const failedTargets: string[] = [];
 
   // Process each target
-  for (const target of SCRAPE_TARGETS) {
+  for (const target of targetsWithConfigs) {
     console.log(`\n${"=".repeat(60)}`);
     console.log(`📦 Target: ${target.name}`);
     console.log(`   URL: ${target.url}`);
@@ -100,8 +175,8 @@ async function runScraper(): Promise<void> {
     console.log(`${"=".repeat(60)}`);
 
     try {
-      // Scrape the target
-      const entries = await scrapeTarget(target, SCRAPER_USER_AGENT);
+      // Scrape the target using appropriate provider
+      const entries = await scrapeByProvider(target, SCRAPER_USER_AGENT);
       totalEntries += entries.length;
 
       if (entries.length > 0) {

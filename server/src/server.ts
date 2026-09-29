@@ -5,7 +5,7 @@ import 'dotenv/config.js';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get24HourStats } from './db.js';
+import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get24HourStats, getAllProviders, getProvider, upsertProvider, deactivateProvider } from './db.js';
 import { authenticateIngestWorker, validateJWTCookie, generateAuthToken, verifyAPIKey, type AuthenticatedRequest } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
 import { initializeDailyReportScheduler, cancelDailyReportScheduler } from './utils/dailyReport.js';
@@ -194,6 +194,115 @@ app.post('/api/v1/ingest', authenticateIngestWorker, (req: Request, res: Respons
 });
 
 /**
+ * ==========================================
+ * 3. PROVIDER MANAGEMENT API
+ * ==========================================
+ */
+
+/**
+ * GET /api/v1/providers - List all active magnet providers
+ * Used by scraper to fetch provider configurations
+ */
+app.get('/api/v1/providers', (_req: Request, res: Response) => {
+  try {
+    const providers = getAllProviders();
+    return res.json({
+      success: true,
+      count: providers.length,
+      providers: providers.map(p => ({
+        provider: p.provider,
+        base_url: p.base_url,
+        description: p.description
+      }))
+    });
+  } catch (err: any) {
+    console.error('Error fetching providers:', err);
+    return res.status(500).json({ error: 'Failed to fetch providers' });
+  }
+});
+
+/**
+ * GET /api/v1/providers/:provider - Get specific provider config
+ * Used by scraper when it needs to validate or fetch a specific provider
+ */
+app.get('/api/v1/providers/:provider', (req: Request, res: Response) => {
+  try {
+    const { provider } = req.params;
+    const config = getProvider(provider);
+    
+    if (!config) {
+      return res.status(404).json({ error: `Provider '${provider}' not found` });
+    }
+    
+    return res.json({
+      success: true,
+      provider: config.provider,
+      base_url: config.base_url,
+      description: config.description
+    });
+  } catch (err: any) {
+    console.error('Error fetching provider:', err);
+    return res.status(500).json({ error: 'Failed to fetch provider' });
+  }
+});
+
+/**
+ * POST /api/v1/providers - Create or update a provider
+ * Requires Bearer token authentication
+ * Body: { provider: string, base_url: string, description?: string }
+ */
+app.post('/api/v1/providers', authenticateIngestWorker, (req: Request, res: Response) => {
+  try {
+    const { provider, base_url, description } = req.body;
+    
+    if (!provider || !base_url) {
+      return res.status(400).json({ error: 'Missing required fields: provider, base_url' });
+    }
+    
+    if (typeof provider !== 'string' || typeof base_url !== 'string') {
+      return res.status(400).json({ error: 'Fields must be strings' });
+    }
+    
+    const updated = upsertProvider(provider, base_url, description);
+    return res.json({
+      success: true,
+      message: `Provider '${provider}' updated successfully`,
+      provider: {
+        provider: updated.provider,
+        base_url: updated.base_url,
+        description: updated.description
+      }
+    });
+  } catch (err: any) {
+    console.error('Error updating provider:', err);
+    return res.status(500).json({ error: 'Failed to update provider' });
+  }
+});
+
+/**
+ * DELETE /api/v1/providers/:provider - Deactivate a provider
+ * Requires Bearer token authentication
+ */
+app.delete('/api/v1/providers/:provider', authenticateIngestWorker, (req: Request, res: Response) => {
+  try {
+    const { provider } = req.params;
+    const deactivated = deactivateProvider(provider);
+    
+    if (!deactivated) {
+      return res.status(404).json({ error: `Provider '${provider}' not found or already inactive` });
+    }
+    
+    return res.json({
+      success: true,
+      message: `Provider '${provider}' deactivated successfully`
+    });
+  } catch (err: any) {
+    console.error('Error deactivating provider:', err);
+    return res.status(500).json({ error: 'Failed to deactivate provider' });
+  }
+});
+
+/**
  * 404 handler
  */
 app.use((_req: Request, res: Response) => {
@@ -209,6 +318,10 @@ const server = app.listen(PORT, () => {
   console.log(`  GET  /api?t=caps               - Torznab capabilities`);
   console.log(`  GET  /api?t=search&q=<query>   - Torznab search`);
   console.log(`  POST /api/v1/ingest            - Ingest records (requires Bearer API key or valid JWT)`);
+  console.log(`  GET  /api/v1/providers         - Get all magnet providers`);
+  console.log(`  GET  /api/v1/providers/:name   - Get specific provider config`);
+  console.log(`  POST /api/v1/providers         - Create/update provider (requires Bearer API key)`);
+  console.log(`  DELETE /api/v1/providers/:name - Deactivate provider (requires Bearer API key)`);
   console.log(`  GET  /health                   - Health check`);
 });
 
