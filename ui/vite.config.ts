@@ -9,10 +9,33 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    port: 5173,
+    strictPort: false,
+    cors: true,
+    // HMR configuration for hot module replacement
+    hmr: {
+      host: 'localhost',
+      port: 5173,
+      protocol: 'ws',
+    },
+    // Proxy API calls to the backend server
     proxy: {
-      '/api': 'http://localhost:3000',
-      '/login': 'http://localhost:3000',
-      '/logout': 'http://localhost:3000',
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/login': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/logout': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     }
   }
 })

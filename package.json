@@ -14,7 +14,9 @@
     "node": ">=26.0.0"
   },
   "scripts": {
-    "dev": "cd server && npm run dev",
+    "dev": "concurrently \"npm run dev:ui\" \"npm run dev:server\" --names \"UI,SERVER\" --prefix \"[{name}]\" --kill-others-on-exit",
+    "dev:ui": "cd ui && npm run dev",
+    "dev:server": "cd server && npm run dev",
     "build": "npm run build:ui && npm run build:server",
     "build:ui": "cd ui && npm run build",
     "build:server": "cd server && npm run build",
@@ -28,6 +30,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "express": "^5.2.1",
     "typescript": "^7.0.0"
   }
