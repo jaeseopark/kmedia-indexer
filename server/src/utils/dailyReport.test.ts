@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import { generateDailyReportMessage, sendDailyReport } from '../utils/dailyReport.js';
+import { generateDailyReportMessage, sendDailyReport } from './dailyReport.js';
 import * as dbModule from '../db.js';
 
 describe('Daily Report', () => {

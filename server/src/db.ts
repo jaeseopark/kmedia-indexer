@@ -127,7 +127,6 @@ function initializeDefaultProviders(): void {
   
   if (existing.count === 0) {
     try {
-      upsertProvider('tfreeca', 'https://www.tfreeca22.top', 'Korean torrent site (tfreeca)');
       upsertProvider('torrenttip', 'https://torrenttip246.top', 'Korean torrent site (TorrentTip)');
       console.log('[DB] Default providers initialized');
     } catch (err) {

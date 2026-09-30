@@ -60,7 +60,7 @@ export async function fetchProviderConfigs(serverUrl: string): Promise<Map<strin
 /**
  * Get provider configuration by name
  * 
- * @param provider - Provider name (e.g., "tfreeca", "torrenttip")
+ * @param provider - Provider name (e.g., "torrenttip")
  * @returns Provider configuration or undefined if not found
  */
 export function getProviderConfig(provider: string): ProviderConfig | undefined {
@@ -90,12 +90,6 @@ export function getAllProviderConfigs(): ProviderConfig[] {
 function getDefaultProviders(): Map<string, ProviderConfig> {
   const defaults = new Map<string, ProviderConfig>();
 
-  defaults.set('tfreeca', {
-    provider: 'tfreeca',
-    base_url: 'https://www.tfreeca22.top',
-    description: 'Korean torrent site (tfreeca)'
-  });
-
   defaults.set('torrenttip', {
     provider: 'torrenttip',
     base_url: 'https://torrenttip246.top',
@@ -113,4 +107,23 @@ function getDefaultProviders(): Map<string, ProviderConfig> {
  */
 export function clearProviderCache(): void {
   providerCache = null;
+}
+
+/**
+ * Build full URL from provider base URL and relative path
+ * Normalizes path by stripping leading and trailing slashes
+ * 
+ * @param baseUrl - Base URL from provider configuration
+ * @param path - Relative path (e.g., "/c/1" or "board.php?mode=list&b_id=tdrama")
+ * @returns Full URL
+ */
+export function buildUrl(baseUrl: string, path: string): string {
+  // Remove trailing slash from baseUrl
+  const normalizedBase = baseUrl.replace(/\/$/, '');
+  
+  // Remove leading and trailing slashes from path
+  const normalizedPath = path.replace(/^\/+|\/+$/g, '');
+  
+  // Join with single slash
+  return `${normalizedBase}/${normalizedPath}`;
 }

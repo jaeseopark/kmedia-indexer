@@ -1,9 +1,8 @@
 import "dotenv/config";
 import axios from "axios";
 import { SCRAPE_TARGETS } from "./config/targets.js";
-import { scrapeTarget as scrapeTfreeca } from "./scrapers/tfreeca.js";
 import { scrapeTarget as scrapeTorrenttip } from "./scrapers/torrenttip.js";
-import { fetchProviderConfigs, getProviderConfig } from "./utils/providerConfig.js";
+import { fetchProviderConfigs, getProviderConfig, buildUrl } from "./utils/providerConfig.js";
 import type { ScrapeTarget } from "./types/scraper.js";
 import type { IngestEntry } from "../../shared/types.js";
 
@@ -12,9 +11,6 @@ import type { IngestEntry } from "../../shared/types.js";
  */
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:3000";
 const INGEST_API_KEY = process.env.INGEST_API_KEY;
-const SCRAPER_USER_AGENT =
-  process.env.SCRAPER_USER_AGENT ||
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 /**
  * Validates required environment variables
@@ -84,14 +80,11 @@ async function postToServer(entries: IngestEntry[]): Promise<any> {
 /**
  * Dispatches scraping to the appropriate provider
  * 
- * @param target - The scraping target configuration
- * @param userAgent - Optional user agent for requests
+ * @param target - The scraping target configuration (must have url set)
  * @returns Array of ingested entries
  */
-async function scrapeByProvider(target: ScrapeTarget, userAgent?: string): Promise<IngestEntry[]> {
+async function scrapeByProvider(target: ScrapeTarget & { url: string }): Promise<IngestEntry[]> {
   switch (target.provider) {
-    case "tfreeca":
-      return scrapeTfreeca(target, userAgent);
     case "torrenttip":
       return scrapeTorrenttip(target);
     default:
@@ -100,45 +93,32 @@ async function scrapeByProvider(target: ScrapeTarget, userAgent?: string): Promi
 }
 
 /**
- * Apply provider configurations to targets
- * Replaces base URL in target.url with the current provider URL from config
+ * Build full URLs for targets from provider base URLs and paths
  * 
- * @param targets - Original targets with hardcoded URLs
- * @returns Targets with updated URLs from provider config
+ * @param targets - Target configurations with paths
+ * @returns Targets with built URLs (url is guaranteed to be set)
  */
-function applyProviderConfigs(targets: ScrapeTarget[]): ScrapeTarget[] {
+function buildTargetUrls(targets: ScrapeTarget[]): (ScrapeTarget & { url: string })[] {
   return targets.map(target => {
     const config = getProviderConfig(target.provider);
     
     if (!config) {
-      console.warn(`[Config] No provider config for '${target.provider}', using default URL`);
-      return target;
+      throw new Error(`[Config] No provider config for '${target.provider}', cannot build URL for ${target.name}`);
     }
 
-    // Replace the base URL in the target URL
-    // Target URL format: {baseUrl}/path/to/resource
-    // Extract the path from the original URL and combine with new baseUrl
-    const originalUrl = target.url;
-    let newUrl = originalUrl;
-
-    // Try to extract the path from the original URL
-    try {
-      const urlObj = new URL(originalUrl);
-      newUrl = `${config.base_url}${urlObj.pathname}${urlObj.search}`;
-      
-      if (newUrl !== originalUrl) {
-        console.log(`[Config] Updated ${target.name}: ${config.base_url}`);
-      }
-    } catch (err) {
-      // If URL parsing fails, just use the provider's base URL + original path
-      console.warn(`[Config] Could not parse URL for ${target.name}, using provider base URL`);
-      newUrl = config.base_url;
+    // Build full URL from provider base URL + target path
+    const url = buildUrl(config.base_url, target.path);
+    
+    if (!url) {
+      throw new Error(`[Config] Failed to build URL for ${target.name}`);
     }
+
+    console.log(`[Config] Built URL for ${target.name}: ${url}`);
 
     return {
       ...target,
-      url: newUrl
-    };
+      url
+    } as ScrapeTarget & { url: string };
   });
 }
 
@@ -157,17 +137,17 @@ async function runScraper(): Promise<void> {
     console.warn(`⚠️  Could not fetch provider configs, using defaults`);
   }
 
-  // Apply provider configs to targets (update URLs if needed)
-  const targetsWithConfigs = applyProviderConfigs(SCRAPE_TARGETS);
+  // Build full URLs from paths and provider configs
+  const targetsWithUrls = buildTargetUrls(SCRAPE_TARGETS);
   
-  console.log(`🎯 Targets: ${targetsWithConfigs.length}\n`);
+  console.log(`🎯 Targets: ${targetsWithUrls.length}\n`);
 
   let totalEntries = 0;
   let successfulTargets = 0;
   const failedTargets: string[] = [];
 
   // Process each target
-  for (const target of targetsWithConfigs) {
+  for (const target of targetsWithUrls) {
     console.log(`\n${"=".repeat(60)}`);
     console.log(`📦 Target: ${target.name}`);
     console.log(`   URL: ${target.url}`);
@@ -176,7 +156,7 @@ async function runScraper(): Promise<void> {
 
     try {
       // Scrape the target using appropriate provider
-      const entries = await scrapeByProvider(target, SCRAPER_USER_AGENT);
+      const entries = await scrapeByProvider(target);
       totalEntries += entries.length;
 
       if (entries.length > 0) {

@@ -2,8 +2,8 @@
  * Server and endpoint tests
  */
 import { describe, it, expect } from 'vitest';
-import type { SearchParams, IngestPayload, IngestResponse } from '../types.js';
-import { IngestResponseSchema } from '../../../shared/schemas.ts';
+import type { SearchParams, IngestPayload, IngestResponse } from './types.js';
+import { IngestResponseSchema } from '../../shared/schemas.ts';
 
 describe('Server Contracts', () => {
   describe('Torznab Contract', () => {
