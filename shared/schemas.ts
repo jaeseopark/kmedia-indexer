@@ -13,9 +13,7 @@ export const TorrentSchema = z.object({
   title: z.string(),
   magnet_url: z.string().url(),
   size_bytes: z.number().int().nonnegative().default(0),
-  seeders: z.number().int().nonnegative().default(0),
-  leechers: z.number().int().nonnegative().default(0),
-  published_at: z.string().datetime().optional(),
+  published_at: z.string().datetime(),
   created_at: z.string().datetime().optional(),
   updated_at: z.string().datetime().optional()
 });
@@ -27,12 +25,10 @@ export type Torrent = z.infer<typeof TorrentSchema>;
  */
 export const IngestEntrySchema = z.object({
   id: z.string().optional(),
-  category: z.string().default('2000'),
+  category: z.string().min(1, 'Category is required'),
   title: z.string().min(1, 'Title is required'),
   magnet_url: z.string().url('Invalid magnet URL'),
-  size_bytes: z.number().int().nonnegative().default(0),
-  seeders: z.number().int().nonnegative().default(0),
-  leechers: z.number().int().nonnegative().default(0),
+  size_bytes: z.number().int().nonnegative('Size must be a non-negative number'),
   published_at: z.string().datetime().optional()
 });
 

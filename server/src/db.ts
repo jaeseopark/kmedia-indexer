@@ -28,9 +28,7 @@ export function initializeDatabase(): void {
       title TEXT NOT NULL,
       magnet_url TEXT NOT NULL,
       size_bytes INTEGER DEFAULT 0,
-      seeders INTEGER DEFAULT 0,
-      leechers INTEGER DEFAULT 0,
-      published_at TEXT,
+      published_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -51,13 +49,12 @@ export function initializeDatabase(): void {
     CREATE INDEX IF NOT EXISTS idx_providers_active ON magnet_providers(active DESC);
   `);
 
-  // Migrate existing records: set updated_at to created_at if it's NULL
-  // Wrapped in try-catch in case column doesn't exist in old schema
+  // Migrate existing records: ensure published_at is set
   try {
-    db.exec(`UPDATE torrents SET updated_at = created_at WHERE updated_at IS NULL;`);
+    db.exec(`UPDATE torrents SET published_at = created_at WHERE published_at IS NULL;`);
   } catch (err) {
     // Column might not exist in old database schema - this is okay
-    console.warn('Migration note: Could not update updated_at column');
+    console.warn('Migration note: Could not update published_at column');
   }
 
   // Initialize default providers (only after tables are created)
@@ -167,15 +164,13 @@ function prepareStatements(): void {
   `);
 
   upsertTorrent = db.prepare(`
-    INSERT INTO torrents (id, category, title, magnet_url, size_bytes, seeders, leechers, published_at, updated_at)
-    VALUES (@id, @category, @title, @magnet_url, @size_bytes, @seeders, @leechers, @published_at, CURRENT_TIMESTAMP)
+    INSERT INTO torrents (id, category, title, magnet_url, size_bytes, published_at, updated_at)
+    VALUES (@id, @category, @title, @magnet_url, @size_bytes, @published_at, CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET
       category=excluded.category,
       title=excluded.title,
       magnet_url=excluded.magnet_url,
       size_bytes=excluded.size_bytes,
-      seeders=excluded.seeders,
-      leechers=excluded.leechers,
       published_at=excluded.published_at,
       updated_at=CURRENT_TIMESTAMP
   `);
@@ -227,8 +222,6 @@ export function ingestTorrents(entries: IngestEntry[]): { count: number; created
           title: item.title,
           magnet_url: item.magnet_url,
           size_bytes: item.size_bytes || 0,
-          seeders: item.seeders || 0,
-          leechers: item.leechers || 0,
           published_at: item.published_at || new Date().toISOString()
         });
         

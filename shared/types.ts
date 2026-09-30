@@ -9,8 +9,6 @@ export interface Torrent {
   title: string;
   magnet_url: string;
   size_bytes: number;
-  seeders: number;
-  leechers: number;
   published_at: string;
   created_at?: string;
   updated_at?: string;
@@ -22,8 +20,6 @@ export interface IngestEntry {
   title: string;
   magnet_url: string;
   size_bytes?: number;
-  seeders?: number;
-  leechers?: number;
   published_at?: string;
 }
 

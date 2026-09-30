@@ -157,6 +157,7 @@ app.get('/api', (req: Request, res: Response) => {
     const itemsXml = results
       .map((item) => {
         const pubDate = new Date(item.published_at || item.created_at || new Date()).toUTCString();
+        
         return `
     <item>
       <title>${xmlEscape(item.title)}</title>
@@ -166,8 +167,6 @@ app.get('/api', (req: Request, res: Response) => {
       <link>${xmlEscape(item.magnet_url)}</link>
       <enclosure url="${xmlEscape(item.magnet_url)}" length="${item.size_bytes || 0}" type="application/x-bittorrent" />
       <torznab:attr name="magneturl" value="${xmlEscape(item.magnet_url)}" />
-      <torznab:attr name="seeders" value="${item.seeders || 0}" />
-      <torznab:attr name="leechers" value="${item.leechers || 0}" />
       <torznab:attr name="category" value="${xmlEscape(item.category || '2000')}" />
     </item>`;
       })

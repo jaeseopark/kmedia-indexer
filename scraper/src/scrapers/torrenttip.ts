@@ -116,13 +116,13 @@ export async function scrapeTarget(target: ScrapeTarget & { url: string }, userA
         const categoryCode = getCategoryCode({ ...mediaInfo, contentType });
 
         // Create entry for server
+        // Note: seeders/leechers intentionally omitted since TorrentTip doesn't expose this info
+        // Server will not include these in Torznab XML if missing, preventing Sonarr seed filters
         const entry: IngestEntry = {
           id: postId,
           title: postTitle,
           magnet_url: magnetUrl,
           category: categoryCode,
-          seeders: 0, // TorrentTip doesn't expose seeder info on listing
-          leechers: 0,
           published_at: new Date().toISOString(),
         };
 

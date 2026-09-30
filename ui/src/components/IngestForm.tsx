@@ -7,8 +7,6 @@ interface IngestEntry {
   magnet_url: string;
   category?: string;
   size_bytes?: number;
-  seeders?: number;
-  leechers?: number;
   published_at?: string;
 }
 
@@ -18,8 +16,6 @@ export function IngestForm() {
     magnet_url: '',
     category: '2000',
     size_bytes: 0,
-    seeders: 0,
-    leechers: 0,
     published_at: '',
   });
 
@@ -47,8 +43,6 @@ export function IngestForm() {
             magnet_url: entry.magnet_url,
             category: entry.category || '2000',
             size_bytes: entry.size_bytes || 0,
-            seeders: entry.seeders || 0,
-            leechers: entry.leechers || 0,
             ...(entry.published_at && { published_at: entry.published_at }),
           },
         ],
@@ -65,8 +59,6 @@ export function IngestForm() {
         magnet_url: '',
         category: '2000',
         size_bytes: 0,
-        seeders: 0,
-        leechers: 0,
         published_at: '',
       });
     } catch (err) {
@@ -124,7 +116,9 @@ export function IngestForm() {
 
         <div className={styles['form-row']}>
           <div className={styles['form-group']}>
-            <label htmlFor="category">Category</label>
+            <label htmlFor="category" className={styles.required}>
+              Category
+            </label>
             <input
               id="category"
               type="text"
@@ -133,11 +127,14 @@ export function IngestForm() {
               onChange={handleChange}
               placeholder="2000 (Movies) or 5000 (TV)"
               disabled={loading}
+              required
             />
           </div>
 
           <div className={styles['form-group']}>
-            <label htmlFor="size_bytes">Size (bytes)</label>
+            <label htmlFor="size_bytes" className={styles.required}>
+              Size (bytes)
+            </label>
             <input
               id="size_bytes"
               type="number"
@@ -146,39 +143,14 @@ export function IngestForm() {
               onChange={handleChange}
               disabled={loading}
               min="0"
+              required
             />
           </div>
         </div>
 
         <div className={styles['form-row']}>
           <div className={styles['form-group']}>
-            <label htmlFor="seeders">Seeders</label>
-            <input
-              id="seeders"
-              type="number"
-              name="seeders"
-              value={entry.seeders}
-              onChange={handleChange}
-              disabled={loading}
-              min="0"
-            />
-          </div>
-
-          <div className={styles['form-group']}>
-            <label htmlFor="leechers">Leechers</label>
-            <input
-              id="leechers"
-              type="number"
-              name="leechers"
-              value={entry.leechers}
-              onChange={handleChange}
-              disabled={loading}
-              min="0"
-            />
-          </div>
-        </div>
-
-        <div className={styles['form-group']}>
+lassName={styles['form-group']}>
           <label htmlFor="published_at">Published Date (ISO 8601)</label>
           <input
             id="published_at"
