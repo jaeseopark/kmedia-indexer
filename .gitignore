@@ -39,6 +39,11 @@ yarn-error.log*
 indexer.sqlite
 indexer.sqlite-shm
 indexer.sqlite-wal
+indexer.db
+
+# Dynamic data
+scraper/data/
+processed_ids.json
 
 # Temporary
 tmp/

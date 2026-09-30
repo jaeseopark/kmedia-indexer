@@ -1,6 +1,6 @@
 /**
- * Maps tfreeca board IDs (b_id URL parameter) to media category codes.
- * Used for routing different tfreeca content types to the appropriate media category.
+ * Maps board IDs to media category codes.
+ * Used for routing different content types to the appropriate media category.
  *
  * Category codes:
  * - "2000": Movies
@@ -8,18 +8,15 @@
  */
 
 export const CATEGORY_MAP: Record<string, "2000" | "5000"> = {
-  tdrama: "5000",    // K-drama series
-  tent: "5000",      // Entertainment shows
-  tgame: "5000",     // Game show reruns
-  // Expandable: add new board IDs as they are discovered
+  // Expandable: add board IDs as they are discovered
 };
 
 /**
- * Extracts the board ID from a tfreeca URL and returns its category.
+ * Returns the category for a given URL.
  * Falls back to "5000" (TV) if board ID is unknown.
  *
  * @example
- * getCategoryFromUrl("https://www.tfreeca22.top/board.php?mode=lists&b_id=tdrama")
+ * getCategoryFromUrl("https://example.com/board.php?mode=lists&b_id=drama")
  * // Returns "5000"
  */
 export function getCategoryFromUrl(url: string): "2000" | "5000" {

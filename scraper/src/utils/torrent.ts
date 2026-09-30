@@ -12,8 +12,8 @@ import parseTorrent from "parse-torrent";
  *
  * Attempts multiple strategies to bypass anti-bot protection:
  * 1. Realistic browser headers (User-Agent, Accept, Accept-Language, etc.)
- * 2. Referer from tfreeca to appear as coming from the site
- * 3. Standard browser cache control headers
+ * 2. Standard browser cache control headers
+ * 3. Connection and encoding preferences
  *
  * @param torrentUrl URL to the .torrent file
  * @returns Magnet link or fallback torrent URL
@@ -28,7 +28,6 @@ export async function downloadAndExtractMagnet(torrentUrl: string): Promise<stri
       "Accept": "application/octet-stream, */*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
       "Accept-Encoding": "gzip, deflate, br",
-      "Referer": "https://www.tfreeca22.top/",
       "Connection": "keep-alive",
       "Cache-Control": "max-age=0",
       "Pragma": "no-cache",

@@ -63,7 +63,7 @@ export function UpdateProviderForm({ onSuccess }: UpdateProviderFormProps) {
             type="text"
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
-            placeholder="e.g., tfreeca, torrenttip"
+            placeholder="e.g., torrenttip"
             disabled={loading}
             required
           />

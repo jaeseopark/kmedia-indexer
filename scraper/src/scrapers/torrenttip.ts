@@ -11,6 +11,7 @@
 import * as cheerio from 'cheerio';
 import { isProcessed, markProcessed } from '../utils/cache.js';
 import { getHttpClient } from '../utils/http.js';
+import { analyzeMediaTitle, getCategoryCode } from '../utils/mediaAnalyzer.js';
 import type { ScrapeTarget } from '../types/scraper.js';
 import type { IngestEntry } from '../../../shared/types.js';
 
@@ -54,7 +55,7 @@ async function fetchPostDetails(postUrl: string, httpClient: any): Promise<strin
  * Scrape TorrentTip forum and extract torrent metadata
  * Returns array of entries ready to post to server
  */
-export async function scrapeTarget(target: ScrapeTarget, userAgent?: string): Promise<IngestEntry[]> {
+export async function scrapeTarget(target: ScrapeTarget & { url: string }, userAgent?: string): Promise<IngestEntry[]> {
   const httpClient = getHttpClient(userAgent);
   console.log(`[${target.name}] Starting scrape...`);
 
@@ -107,12 +108,19 @@ export async function scrapeTarget(target: ScrapeTarget, userAgent?: string): Pr
         // Mark as processed before validation
         markProcessed(postId);
 
+        // Analyze media title to extract resolution and release type
+        const mediaInfo = analyzeMediaTitle(postTitle);
+
+        // Determine category based on media info and content type
+        const contentType = target.contentType || 'tv';
+        const categoryCode = getCategoryCode({ ...mediaInfo, contentType });
+
         // Create entry for server
         const entry: IngestEntry = {
           id: postId,
           title: postTitle,
           magnet_url: magnetUrl,
-          category: target.category,
+          category: categoryCode,
           seeders: 0, // TorrentTip doesn't expose seeder info on listing
           leechers: 0,
           published_at: new Date().toISOString(),

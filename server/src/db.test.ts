@@ -3,8 +3,8 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Database from 'better-sqlite3';
-import { ingestTorrents, searchTorrents, getAllTorrents, getTorrentById } from '../db.js';
-import type { IngestEntry } from '../types.js';
+import { ingestTorrents, searchTorrents, getAllTorrents, getTorrentById } from './db.js';
+import type { IngestEntry } from './types.js';
 
 describe('Database Operations', () => {
   let testDb: Database.Database;

@@ -1,6 +1,6 @@
-# tfreeca Scraper
+# Scraper
 
-TypeScript-based web scraper for extracting torrent metadata from tfreeca and ingesting into kmedia-indexer.
+TypeScript-based web scraper for extracting torrent metadata from torrent sites and ingesting into kmedia-indexer.
 
 ## Quick Start
 
@@ -53,14 +53,14 @@ LOG_LEVEL=info
 
 ### Adding New Targets
 
-Edit `src/config/targets.ts` to add new tfreeca board URLs:
+Edit `src/config/targets.ts` to add new provider URLs:
 
 ```typescript
 export const SCRAPE_TARGETS: ScrapeTarget[] = [
   {
     name: "my-new-target",
-    provider: "tfreeca",
-    url: "https://www.tfreeca22.top/board.php?mode=lists&b_id=myid",
+    provider: "torrenttip",
+    path: "/c/2",
     category: "5000", // "2000" for movies, "5000" for TV
     description: "My custom content",
   },
