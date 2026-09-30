@@ -5,6 +5,7 @@
   "type": "module",
   "private": true,
   "workspaces": [
+    "ui",
     "server",
     "scraper",
     "shared"
@@ -14,7 +15,9 @@
   },
   "scripts": {
     "dev": "cd server && npm run dev",
-    "build": "cd server && npm run build",
+    "build": "npm run build:ui && npm run build:server",
+    "build:ui": "cd ui && npm run build",
+    "build:server": "cd server && npm run build",
     "start": "cd server && npm start",
     "test": "cd server && npm run test",
     "docker:build": "docker build -f Dockerfile-server -t kmedia-indexer-server:latest .",

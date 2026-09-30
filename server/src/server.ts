@@ -2,6 +2,8 @@
  * Main Express server for Torznab indexer
  */
 import 'dotenv/config.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -9,11 +11,10 @@ import { initializeDatabase, searchTorrents, getAllTorrents, ingestTorrents, get
 import { authenticateIngestWorker, validateJWTCookie, generateAuthToken, verifyAPIKey, type AuthenticatedRequest } from './middleware/auth.js';
 import { xmlEscape } from './utils/xml.js';
 import { initializeDailyReportScheduler, cancelDailyReportScheduler } from './utils/dailyReport.js';
-import { renderLoginForm } from './templates/auth.js';
-import { renderIndexPage } from './templates/index.js';
 import type { SearchParams, Torrent } from './types.js';
 import { IngestPayloadSchema } from '../../shared/schemas.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
@@ -39,18 +40,10 @@ initializeDatabase();
 initializeDailyReportScheduler();
 
 /**
- * Index page - Health information and ingest form
+ * Serve React UI app from public directory
+ * Falls back to index.html for SPA routing
  */
-app.get('/', (req: AuthenticatedRequest, res: Response): void => {
-  // Check if user has valid JWT
-  if (!req.userId) {
-    res.type('text/html; charset=utf-8').send(renderLoginForm());
-    return;
-  }
-
-  const stats = get24HourStats();
-  res.type('text/html; charset=utf-8').send(renderIndexPage({ stats }));
-});
+app.use(express.static(path.join(__dirname, '../../public')));
 
 /**
  * Health check endpoint
@@ -66,7 +59,7 @@ app.post('/login', express.urlencoded({ extended: false }), (req: Request, res: 
   const { apiKey } = req.body;
 
   if (!apiKey || !verifyAPIKey(apiKey)) {
-    res.status(401).type('text/html; charset=utf-8').send(renderLoginForm({ hasError: true }));
+    res.status(401).json({ error: 'Invalid API key' });
     return;
   }
 
@@ -86,7 +79,31 @@ app.post('/login', express.urlencoded({ extended: false }), (req: Request, res: 
  */
 app.get('/logout', (_req: Request, res: Response): void => {
   res.clearCookie('auth_token');
-  res.redirect('/');
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+/**
+ * ==========================================
+ * 0. UI API ENDPOINTS
+ * ==========================================
+ */
+
+/**
+ * GET /api/v1/stats - Get 24-hour health statistics (requires authentication)
+ * Used by React UI dashboard
+ */
+app.get('/api/v1/stats', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const stats = get24HourStats();
+    return res.json(stats);
+  } catch (err: any) {
+    console.error('Error fetching stats:', err);
+    return res.status(500).json({ error: 'Failed to fetch stats' });
+  }
 });
 
 /**
@@ -303,10 +320,15 @@ app.delete('/api/v1/providers/:provider', authenticateIngestWorker, (req: Reques
 });
 
 /**
- * 404 handler
+ * SPA fallback - serve index.html for non-API routes
+ * This allows React Router to handle client-side routing
  */
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not found' });
+app.get('*', (_req: Request, res: Response): void => {
+  if (_req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+  res.sendFile(path.join(__dirname, '../../public/index.html'));
 });
 
 /**
@@ -314,9 +336,12 @@ app.use((_req: Request, res: Response) => {
  */
 const server = app.listen(PORT, () => {
   console.log(`[${NODE_ENV}] Indexer listening on http://localhost:${PORT}`);
-  console.log(`  GET  /                         - Admin page (requires login)`);
+  console.log(`  GET  /                         - React UI SPA (requires login)`);
+  console.log(`  POST /login                    - Authenticate with API key`);
+  console.log(`  GET  /logout                   - Logout`);
   console.log(`  GET  /api?t=caps               - Torznab capabilities`);
   console.log(`  GET  /api?t=search&q=<query>   - Torznab search`);
+  console.log(`  GET  /api/v1/stats             - Get health stats (requires auth)`);
   console.log(`  POST /api/v1/ingest            - Ingest records (requires Bearer API key or valid JWT)`);
   console.log(`  GET  /api/v1/providers         - Get all magnet providers`);
   console.log(`  GET  /api/v1/providers/:name   - Get specific provider config`);

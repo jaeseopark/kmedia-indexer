@@ -1,5 +1,5 @@
 /**
- * Authentication middleware for ingest endpoint (scraper workers) and admin page
+ * Authentication middleware for ingest endpoint (scraper workers) and UI dashboard
  */
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
@@ -84,7 +84,7 @@ export function validateJWTCookie(req: AuthenticatedRequest, res: Response, next
  * Generate JWT token
  */
 export function generateAuthToken(): string {
-  return jwt.sign({ sub: 'health-admin' }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  return jwt.sign({ sub: 'health-ui' }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
 /**
