@@ -1,10 +1,15 @@
 /**
  * Database initialization and schema setup
  */
+import 'dotenv/config.js';
 import Database from 'better-sqlite3';
 import type { Torrent, IngestEntry } from './types.js';
 
-const DB_PATH = process.env.DB_PATH || '/data/indexer.sqlite';
+const DB_PATH = process.env.DB_PATH;
+
+if (!DB_PATH) {
+  throw new Error('DB_PATH environment variable is not set');
+}
 
 const db: Database.Database = new Database(DB_PATH);
 
