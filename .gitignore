@@ -44,3 +44,4 @@ indexer.sqlite-wal
 tmp/
 temp/
 .cache/
+mnt/
