@@ -9,9 +9,10 @@ COPY tsconfig.json ./
 # Copy workspace packages
 COPY server ./server
 COPY shared ./shared
+COPY ui ./ui
 
-# Install dependencies and build server
-RUN npm install --legacy-peer-deps && cd server && npm run build
+# Install dependencies and build both UI and server
+RUN npm install --legacy-peer-deps && npm run build
 
 # Runtime stage
 FROM node:26-alpine
@@ -26,6 +27,7 @@ COPY shared/package*.json ./shared/
 # Copy built server and dependencies from builder
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 
 # Create non-root user
