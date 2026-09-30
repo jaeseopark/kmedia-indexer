@@ -12,7 +12,7 @@ export interface ProviderConfig {
   description?: string;
 }
 
-// Local cache of provider configs
+// Local cache of provider configs (valid only for current scraper run)
 let providerCache: Map<string, ProviderConfig> | null = null;
 
 /**
@@ -23,11 +23,6 @@ let providerCache: Map<string, ProviderConfig> | null = null;
  * @returns Map of provider name to configuration
  */
 export async function fetchProviderConfigs(serverUrl: string): Promise<Map<string, ProviderConfig>> {
-  // Return cached config if available
-  if (providerCache) {
-    return providerCache;
-  }
-
   console.log('[ProviderConfig] Fetching provider configurations from server...');
 
   try {
@@ -114,7 +109,7 @@ function getDefaultProviders(): Map<string, ProviderConfig> {
 }
 
 /**
- * Clear provider cache (useful for testing)
+ * Clear provider cache
  */
 export function clearProviderCache(): void {
   providerCache = null;
