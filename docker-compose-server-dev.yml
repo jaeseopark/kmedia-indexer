@@ -2,7 +2,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile-server
+      dockerfile: server/Dockerfile
     container_name: kmedia-indexer-server
     restart: unless-stopped
     ports:
