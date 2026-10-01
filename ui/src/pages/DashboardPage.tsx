@@ -9,14 +9,25 @@ import styles from '../styles/global.module.css';
 
 type Tab = 'dashboard' | 'ingest' | 'providers';
 
+interface Provider {
+  provider: string;
+  base_url: string;
+  description?: string;
+}
+
 export function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
 
   const healthStats = useHealthStats();
   const providers = useProviders();
 
   const handleRefresh = () => {
     window.location.reload();
+  };
+
+  const handleEditProvider = (provider: Provider) => {
+    setEditingProvider(provider);
   };
 
   return (
@@ -70,12 +81,18 @@ export function DashboardPage() {
 
         {activeTab === 'providers' && (
           <>
-            <UpdateProviderForm onSuccess={handleRefresh} />
+            <UpdateProviderForm 
+              onSuccess={handleRefresh} 
+              editingProvider={editingProvider}
+              onEditingChange={setEditingProvider}
+            />
             <ProvidersList
               providers={providers.providers}
               loading={providers.loading}
               error={providers.error}
               onRefresh={handleRefresh}
+              onEdit={handleEditProvider}
+              editingProvider={editingProvider}
             />
           </>
         )}

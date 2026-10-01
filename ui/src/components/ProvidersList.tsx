@@ -13,6 +13,8 @@ interface ProvidersListProps {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  onEdit?: (provider: Provider) => void;
+  editingProvider?: Provider | null;
 }
 
 export function ProvidersList({
@@ -20,6 +22,8 @@ export function ProvidersList({
   loading,
   error,
   onRefresh,
+  onEdit,
+  editingProvider,
 }: ProvidersListProps) {
   const [updatingProvider, setUpdatingProvider] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -94,14 +98,24 @@ export function ProvidersList({
                 </td>
                 <td>{provider.description || '-'}</td>
                 <td>
-                  <button
-                    className={`${styles.button} ${styles.danger}`}
-                    onClick={() => handleDelete(provider.provider)}
-                    disabled={updatingProvider === provider.provider}
-                    style={{ padding: '6px 12px', fontSize: '12px' }}
-                  >
-                    {updatingProvider === provider.provider ? 'Removing...' : 'Deactivate'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      className={`${styles.button} ${editingProvider?.provider === provider.provider ? styles.secondary : ''}`}
+                      onClick={() => onEdit?.(provider)}
+                      disabled={updatingProvider === provider.provider}
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      {editingProvider?.provider === provider.provider ? 'Editing...' : 'Edit'}
+                    </button>
+                    <button
+                      className={`${styles.button} ${styles.danger}`}
+                      onClick={() => handleDelete(provider.provider)}
+                      disabled={updatingProvider === provider.provider}
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      {updatingProvider === provider.provider ? 'Removing...' : 'Deactivate'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
