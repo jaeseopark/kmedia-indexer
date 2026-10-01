@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "8081:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_PATH=/app/mnt/data/indexer.sqlite
+      - INGEST_API_KEY=test-key
+      - JWT_SECRET=test-secret
+    volumes:
+      - ./mnt/data:/app/mnt/data

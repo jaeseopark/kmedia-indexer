@@ -43,7 +43,10 @@ initializeDailyReportScheduler();
  * Serve React UI app from public directory
  * Falls back to index.html for SPA routing
  */
-app.use(express.static(path.join(__dirname, '../../public')));
+app.use(express.static(path.join(__dirname, '../../../../public'), {
+  etag: false,
+  dotfiles: 'deny'
+}));
 
 /**
  * Health check endpoint
@@ -322,12 +325,29 @@ app.delete('/api/v1/providers/:provider', authenticateIngestWorker, (req: Reques
  * SPA fallback - serve index.html for non-API routes
  * This allows React Router to handle client-side routing
  */
-app.get('*', (_req: Request, res: Response): void => {
+app.use((_req: Request, res: Response, next) => {
+  // API routes should 404 from the next middleware
   if (_req.path.startsWith('/api/')) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    return next();
   }
-  res.sendFile(path.join(__dirname, '../../public/index.html'));
+  
+  // For everything else, try to serve index.html for SPA routing
+  const indexPath = path.join(__dirname, '../../../../public/index.html');
+  console.log(`[SPA fallback] Serving ${indexPath} for path ${_req.path}`);
+  
+  res.sendFile(indexPath, (err: any) => {
+    if (err) {
+      console.error(`[SPA fallback] Error serving index.html:`, err.message);
+      next(err);
+    }
+  });
+});
+
+/**
+ * API 404 handler
+ */
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not found' });
 });
 
 /**

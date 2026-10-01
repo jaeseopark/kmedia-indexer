@@ -3,6 +3,8 @@
  */
 import 'dotenv/config.js';
 import Database from 'better-sqlite3';
+import path from 'path';
+import { mkdirSync } from 'fs';
 import type { Torrent, IngestEntry } from './types.js';
 
 const DB_PATH = process.env.DB_PATH;
@@ -10,6 +12,10 @@ const DB_PATH = process.env.DB_PATH;
 if (!DB_PATH) {
   throw new Error('DB_PATH environment variable is not set');
 }
+
+// Ensure the directory exists before creating the database
+const dbDir = path.dirname(DB_PATH);
+mkdirSync(dbDir, { recursive: true });
 
 const db: Database.Database = new Database(DB_PATH);
 
