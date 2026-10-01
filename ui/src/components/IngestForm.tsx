@@ -148,9 +148,7 @@ export function IngestForm() {
           </div>
         </div>
 
-        <div className={styles['form-row']}>
-          <div className={styles['form-group']}>
-lassName={styles['form-group']}>
+        <div className={styles['form-group']}>
           <label htmlFor="published_at">Published Date (ISO 8601)</label>
           <input
             id="published_at"
