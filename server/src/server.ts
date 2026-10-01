@@ -4,6 +4,7 @@
 import 'dotenv/config.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -43,7 +44,18 @@ initializeDailyReportScheduler();
  * Serve React UI app from public directory
  * Falls back to index.html for SPA routing
  */
-app.use(express.static(path.join(__dirname, '../../../../public'), {
+// Determine public directory path - works for both local dev and Docker
+const publicDir = (() => {
+  // Try local dev path first (when running ts-node from server/src)
+  const localPath = path.join(__dirname, '../../public');
+  // Docker path (when running compiled from server/dist/server/src)
+  const dockerPath = path.join(__dirname, '../../../../public');
+  
+  // Return the path that exists, or Docker path as fallback
+  return existsSync(localPath) ? localPath : dockerPath;
+})();
+
+app.use(express.static(publicDir, {
   etag: false,
   dotfiles: 'deny'
 }));
@@ -332,8 +344,7 @@ app.use((_req: Request, res: Response, next) => {
   }
   
   // For everything else, try to serve index.html for SPA routing
-  const indexPath = path.join(__dirname, '../../../../public/index.html');
-  console.log(`[SPA fallback] Serving ${indexPath} for path ${_req.path}`);
+  const indexPath = path.join(publicDir, 'index.html');
   
   res.sendFile(indexPath, (err: any) => {
     if (err) {
